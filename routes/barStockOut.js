@@ -1,6 +1,6 @@
 // routes/stockOutwardRoutes.js
 const express = require('express');
-const BarStockOut = require('../models/barStockOut');
+const BarStockOut = require('../models/BarStockOut');
 const LiquorBrand = require('../models/LiquorBrand');
 
 const router = express.Router();
