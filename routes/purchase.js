@@ -1,6 +1,8 @@
+
 const express = require("express");
 const Purchase = require("../models/Purchase");
 const Item = require("../models/Item");
+const Menu = require("../models/Menu");
 const router = express.Router();
 
 router.get("/purchase/stockQty", async (req, res) => {
@@ -20,6 +22,9 @@ router.get("/purchase/stockQty", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+
+
 
 router.get("/purchases", async (req, res) => {
   try {
@@ -124,60 +129,125 @@ router.post("/purchase/addItem", async (req, res) => {
 });
 
 
-router.post("/purchase/savebill", async (req, res) => {
-    try {
-      const {
-        date,
-        billNo,
-        vendor,
-        subtotal,
-        gst,
-        gstAmount,
-        grandTotal,
-        paidAmount,
-        discount,
-        balance,
-        items,
-      } = req.body;
+// router.post("/purchase/savebill", async (req, res) => {
+//     try {
+//       const {
+//         date,
+//         billNo,
+//         vendor,
+//         subtotal,
+//         gst,
+//         gstAmount,
+//         grandTotal,
+//         paidAmount,
+//         discount,
+//         balance,
+//         items,
+//       } = req.body;
   
+//       // Check if a purchase with the same billNo already exists
+//       const existingPurchase = await Purchase.findOne({ billNo });
+//       if (existingPurchase) {
+//         return res.status(400).json({ error: "Duplicate bill number" });
+//       }
+  
+//       // Find or create the purchase
+//       let purchase = new Purchase({
+//         date,
+//         billNo,
+//         vendorName: vendor,
+//         subtotal,
+//         grandTotal,
+//         gst,
+//         gstAmount,
+//         paidAmount,
+//         discount,
+//         balance,
+//         items,
+//       });
+  
+//       // Iterate through purchased items to update stock quantity
+//       for (const item of items) {
+//         // Find the corresponding item in the database
+//         const purchasedItem = await Item.findOne({ itemName: item.productName });
+//         if (purchasedItem) {
+//           // Update stock quantity based on the purchased quantity
+//           purchasedItem.stockQty += parseFloat(item.quantity);
+//           await purchasedItem.save();
+//         }
+//       }
+  
+//       const savedPurchase = await purchase.save();
+//       res.json(savedPurchase);
+//     } catch (error) {
+//       res.status(500).json({ error: error.message });
+//     }
+//   });
+
+
+router.post("/purchase/savebill", async (req, res) => {
+  try {
+      const {
+          date,
+          billNo,
+          vendor,
+          subtotal,
+          gst,
+          gstAmount,
+          grandTotal,
+          paidAmount,
+          discount,
+          balance,
+          items,
+      } = req.body;
+
       // Check if a purchase with the same billNo already exists
       const existingPurchase = await Purchase.findOne({ billNo });
       if (existingPurchase) {
-        return res.status(400).json({ error: "Duplicate bill number" });
+          return res.status(400).json({ error: "Duplicate bill number" });
       }
-  
+
       // Find or create the purchase
       let purchase = new Purchase({
-        date,
-        billNo,
-        vendorName: vendor,
-        subtotal,
-        grandTotal,
-        gst,
-        gstAmount,
-        paidAmount,
-        discount,
-        balance,
-        items,
+          date,
+          billNo,
+          vendorName: vendor,
+          subtotal,
+          grandTotal,
+          gst,
+          gstAmount,
+          paidAmount,
+          discount,
+          balance,
+          items,
       });
-  
+
       // Iterate through purchased items to update stock quantity
       for (const item of items) {
-        // Find the corresponding item in the database
-        const purchasedItem = await Item.findOne({ itemName: item.productName });
-        if (purchasedItem) {
-          // Update stock quantity based on the purchased quantity
-          purchasedItem.stockQty += parseFloat(item.quantity);
-          await purchasedItem.save();
-        }
+          // Update stock quantity for Items
+          const purchasedItem = await Item.findOne({ itemName: item.productName });
+          if (purchasedItem) {
+              purchasedItem.stockQty += parseFloat(item.quantity);
+              await purchasedItem.save();
+          }
+          
+          // Update stock quantity for Menus
+          const menu = await Menu.findOne({ name: item.productName });
+          if (menu) {
+              menu.stockQty += parseFloat(item.quantity);
+              await menu.save();
+          }
       }
-  
+
       const savedPurchase = await purchase.save();
       res.json(savedPurchase);
-    } catch (error) {
+  } catch (error) {
       res.status(500).json({ error: error.message });
-    }
-  });
+  }
+});
+
+
+
   
 router.delete("/purchases/:id", getPurchase, async (req, res) => {
   try {

@@ -57,6 +57,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/hide', async (req, res) => {
+  try {
+    // Exclude the category with the name "Settle" from the query
+    const mainCategories = await MainCategory.find({ name: { $ne: "Settle" } });
+    res.json(mainCategories);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 // routes/mainCategoryRoutes.js
 router.get('/:id', async (req, res) => {

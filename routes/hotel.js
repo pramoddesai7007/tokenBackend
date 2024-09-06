@@ -9,19 +9,22 @@ const Menu = require('../models/Menu')
 
 
 // API for adding a new company
-let hotelCreated = false; // This flag indicates whether a hotel has been created
+// let hotelCreated = false; // This flag indicates whether a hotel has been created
 
 router.post('/create', upload.fields([{ name: 'hotelLogo', maxCount: 1 }, { name: 'qrCode', maxCount: 1 }]), async (req, res) => {
     try {
         // Check if a hotel has already been created
-        if (hotelCreated) {
-            return res.status(400).json({ message: 'Hotel has already been created' });
-        }
 
         // Continue with the hotel creation logic
-        const { hotelName, address, email, contactNo, gstNo, sacNo, fssaiNo } = req.body;
+        const { hotelName, address, email, contactNo, gstNo, sacNo, fssaiNo, vatNo } = req.body;
         const hotelLogo = req.files['hotelLogo'] ? req.files['hotelLogo'][0].path : undefined;
         const qrCode = req.files['qrCode'] ? req.files['qrCode'][0].path : undefined;
+
+        const existingHotel = await Hotel.findOne({ hotelName })
+
+        if (existingHotel) {
+            return res.send(400).json({ message: "Hotel Already exists" })
+        }
 
         const newHotel = new Hotel({
             hotelName,
@@ -29,6 +32,7 @@ router.post('/create', upload.fields([{ name: 'hotelLogo', maxCount: 1 }, { name
             email,
             contactNo,
             gstNo,
+            vatNo,
             sacNo,
             fssaiNo,
             hotelLogo,
@@ -39,7 +43,7 @@ router.post('/create', upload.fields([{ name: 'hotelLogo', maxCount: 1 }, { name
         const savedHotel = await newHotel.save();
 
         // Set the flag to indicate that the hotel has been created
-        hotelCreated = true;
+        // hotelCreated = true;
 
         res.status(201).json(savedHotel);
     } catch (error) {
@@ -48,10 +52,43 @@ router.post('/create', upload.fields([{ name: 'hotelLogo', maxCount: 1 }, { name
     }
 });
 
+// API for adding a new company
+// router.post('/create', upload.fields([{ name: 'hotelLogo', maxCount: 1 }, { name: 'qrCode', maxCount: 1 }]), async (req, res) => {
+//     try {
+//         const { hotelName, address, email, contactNo, gstNo, sacNo, fssaiNo } = req.body;
+
+//         // Extract the file paths from req.files
+//         // const hotelLogo = req.files['hotelLogo'][0].path;
+//         // const qrCode = req.files['qrCode'][0].path;
+
+//         const hotelLogo = req.files['hotelLogo'] ? req.files['hotelLogo'][0].path : undefined;
+//         const qrCode = req.files['qrCode'] ? req.files['qrCode'][0].path : undefined;
+
+//         // Create a new company
+//         const newHotel = new Hotel({
+//             hotelName,
+//             address,
+//             email,
+//             contactNo,
+//             gstNo,
+//             sacNo,
+//             fssaiNo,
+//             hotelLogo,
+//             qrCode,
+//         });
+//         // Save the new company to the database
+//         const savedCompany = await newHotel.save();
+//         res.status(201).json(savedCompany);
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: 'Internal Server Error' });
+//     }
+// });
+
 // API to Edit the Hotel
 router.patch('/edit/:hotelId', upload.fields([{ name: 'hotelLogo', maxCount: 1 }, { name: 'qrCode', maxCount: 1 }]), async (req, res) => {
     try {
-        const { hotelName, address, email, contactNo, gstNo, sacNo, fssaiNo } = req.body;
+        const { hotelName, address, email, contactNo, gstNo, sacNo, fssaiNo, vatNo } = req.body;
         const { hotelId } = req.params;
 
         // Extract the file paths from req.files if they are provided
@@ -76,6 +113,7 @@ router.patch('/edit/:hotelId', upload.fields([{ name: 'hotelLogo', maxCount: 1 }
         hotelToUpdate.email = email;
         hotelToUpdate.contactNo = contactNo;
         hotelToUpdate.gstNo = gstNo;
+        hotelToUpdate.vatNo = vatNo;
         hotelToUpdate.sacNo = sacNo;
         hotelToUpdate.fssaiNo = fssaiNo;
 
@@ -186,6 +224,29 @@ router.patch('/gst/:id', async (req, res) => {
         }
 
         hotelToUpdate.gstPercentage = gstPercentage !== undefined ? gstPercentage : hotelToUpdate.gstPercentage;
+
+        const updatedHotel = await hotelToUpdate.save();
+
+        res.json(updatedHotel);
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+});
+
+
+
+router.patch('/vat/:id', async (req, res) => {
+    const { id } = req.params;
+    const { vatPercentage } = req.body;
+
+    try {
+        const hotelToUpdate = await Hotel.findById(id);
+
+        if (!hotelToUpdate) {
+            return res.status(404).json({ message: 'Hotel not found' });
+        }
+
+        hotelToUpdate.vatPercentage = vatPercentage !== undefined ? vatPercentage : hotelToUpdate.vatPercentage;
 
         const updatedHotel = await hotelToUpdate.save();
 

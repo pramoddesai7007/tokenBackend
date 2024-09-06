@@ -19,7 +19,7 @@ const expensesFormSchema = new mongoose.Schema({
   paidBy: {
     type: String,
   
-    // required: true
+    required: true
   },
   bankName: {
     type: String
@@ -32,7 +32,7 @@ const expensesFormSchema = new mongoose.Schema({
   },
   amount: {
     type: Number,
-    // required: true
+    required: true
   }
 });
 

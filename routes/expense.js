@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Expense = require('../models/Expense'); // Assuming Expense model is in a file named Expense.js
+const moment = require('moment');
+const ExpensesForm = require('../models/ExpensesForm');
 
 // Get all expenses
 router.get('/expenses', async (req, res) => {
@@ -76,6 +78,47 @@ router.delete('/expenses/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting expense:', error);
     res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+router.get('/expenses-amounts-by-month', async (req, res) => {
+  try {
+    const currentYear = moment().year();
+    const startOfYear = moment().startOf('year');
+
+    const expensesByMonth = await ExpensesForm.aggregate([
+      {
+        $match: {
+          date: { $gte: startOfYear.toDate() }, // Filter expenses from the current year
+        },
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: '$date' }, // Group by month
+            year: { $year: '$date' }, // Also group by year to handle expenses in different years
+          },
+          totalAmount: { $sum: '$amount' }, // Calculate total amount for each month
+        },
+      },
+      {
+        $project: {
+          _id: 0, // Exclude _id from the result
+          month: '$_id.month', // Extract month from _id and rename it as 'month'
+          year: '$_id.year', // Extract year from _id and rename it as 'year'
+          totalAmount: 1, // Include totalAmount in the result
+        },
+      },
+      {
+        $sort: { year: 1, month: 1 }, // Sort by year and month ascending
+      },
+    ]);
+
+    res.json({ expensesAmountsByMonth: expensesByMonth });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

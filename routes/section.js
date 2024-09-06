@@ -1,12 +1,18 @@
 // routes/sectionRoutes.js
 const express = require('express');
 const Section = require('../models/Section');
+const Table = require('../models/Table');
 const router = express.Router();
 
 // Create a new section
 router.post('/create', async (req, res) => {
     const { name } = req.body;
     try {
+        const section = await Section.findOne({name})
+        console.log(section)
+        if (section){
+            res.status(401).json({ message: err.message });
+        }
         const newSection = new Section({ name });
         const savedSection = await newSection.save();
         res.status(201).json(savedSection);
@@ -14,6 +20,8 @@ router.post('/create', async (req, res) => {
         res.status(400).json({ message: err.message });
     }
 });
+
+
 
 router.patch('/ac/:id', async (req, res) => {
     const { id } = req.params;
@@ -35,6 +43,7 @@ router.patch('/ac/:id', async (req, res) => {
         res.status(400).json({ message: err.message });
     }
 });
+
 
 
 router.patch('/:id', async (req, res) => {
@@ -68,14 +77,24 @@ router.patch('/:id', async (req, res) => {
 
 
 // Delete a section
+// Delete a section and associated tables
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
+        // Find the section to be deleted
         const deletedSection = await Section.findByIdAndDelete(id);
-        res.json({ message: 'Section deleted successfully', deletedSection });
+
+        if (!deletedSection) {
+            return res.status(404).json({ message: 'Section not found' });
+        }
+
+        // Delete all tables within the section
+        await Table.deleteMany({ '_id': { $in: deletedSection.tableNames.map(t => t.tableId) } });
+
+        res.json({ message: 'Section and associated tables deleted successfully' });
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        res.status(500).json({ message: err.message });
     }
 });
 

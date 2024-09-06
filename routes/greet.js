@@ -16,12 +16,22 @@ router.use(bodyParser.json());
 
 // CRUD Routes
 
-// Create (Post) Operation
+// Define the route to create a greet
 router.post('/greet', async (req, res) => {
   try {
+    // Check if a greet already exists in the database
+    const existingGreet = await Greet.findOne();
+
+    // If a greet already exists, return an error
+    if (existingGreet) {
+      return res.status(400).json({ message: 'A greet already exists' });
+    }
+
+    // If no greet exists, create a new one
     const newGreet = await Greet.create(req.body);
-    res.json(newGreet);
+    res.status(201).json(newGreet);
   } catch (error) {
+    console.error('Error creating greet:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

@@ -13,6 +13,7 @@ router.get('/bankNames', async (req, res) => {
     }
   });
   
+  
   // Get bank name by ID
   router.get('/bankNames/:id', async (req, res) => {
     try {

@@ -8,8 +8,9 @@ const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
 var jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
-const { sendPasswordResetEmail } = require("../sendPassword");
+const { sendPasswordReportEmail } = require("../sendPassword");
 const SuperAdmin = require("../models/SuperAdmin");
+const AdminBar = require("../models/AdminBar");
 const SUPERADMINA_JWT_SECRET = "superadmin123456@admin123456";
 
 // One time setup to store and create user in Database
@@ -51,6 +52,51 @@ router.post("/setup", async (req, res) => {
 
 // login Admin
 // http://localhost:5000/api/auth/login
+// router.post(
+//   "/login",
+//   [
+//     body("username", "Enter a valid username").exists(),
+//     body("password", "Password cannot be blank").exists(),
+//   ],
+//   async (req, res) => {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       return res.status(400).json({ errors: errors.array() });
+//     }
+//     const { username, password } = req.body;
+
+//     try {
+//       // Retrieve the hashed password for the admin based on username
+//       const admin = await SuperAdmin.findOne({ username });
+
+//       if (!admin) {
+//         return res.status(401).json({ message: "Authentication failed" });
+//       }
+
+//       // Compare the entered plain password with the hashed password in the database
+//       const passwordMatch = await bcrypt.compare(password, admin.password);
+
+//       if (passwordMatch) {
+//         const token = jwt.sign(
+//           { username: admin.username, role: "superAdmin", email: admin.email },
+//           SUPERADMINA_JWT_SECRET
+//         );
+
+//         return res
+//           .status(200)
+//           .json({ message: "Authentication successful", token });
+//       } else {
+//         // Passwords don't match, authentication failed
+//         return res.status(401).json({ message: "Authentication failed" });
+//       }
+//     } catch (error) {
+//       return res.status(500).json({ message: "Internal server error" });
+//     }
+//   }
+// );
+
+
+
 router.post(
   "/login",
   [
@@ -65,19 +111,28 @@ router.post(
     const { username, password } = req.body;
 
     try {
-      // Retrieve the hashed password for the admin based on username
-      const admin = await SuperAdmin.findOne({ username });
+      // Retrieve the hashed password for the super admin based on username
+      const superAdmin = await SuperAdmin.findOne({ username });
 
-      if (!admin) {
+
+      if (!superAdmin) {
         return res.status(401).json({ message: "Authentication failed" });
       }
 
       // Compare the entered plain password with the hashed password in the database
-      const passwordMatch = await bcrypt.compare(password, admin.password);
+      const passwordMatch = await bcrypt.compare(password, superAdmin.password);
 
       if (passwordMatch) {
+        let role = "superAdmin";
+        
+        // Check if the super admin's email exists in the Admins model and if isBar is true
+        const admin = await AdminBar.findOne({ email: superAdmin.email });
+        if (admin && admin.isBar) {
+          role = "superAdminBar";
+        }
+
         const token = jwt.sign(
-          { username: admin.username, role: "superAdmin" },
+          { username: superAdmin.username, role: role, email: superAdmin.email },
           SUPERADMINA_JWT_SECRET
         );
 
@@ -93,6 +148,13 @@ router.post(
     }
   }
 );
+
+
+
+
+
+
+
 
 //  Route to change the password
 // http://localhost:5000/api/auth/changePassword
@@ -187,7 +249,7 @@ router.post(
       await admin.save();
 
       // Send a password reset email to the user
-      sendPasswordResetEmail(admin.email, resetToken); // Implement this function
+      sendPasswordReportEmail(admin.email, resetToken); // Implement this function
       return res
         .status(200)
         .json({ message: "Password reset email sent successfully" });
@@ -200,12 +262,12 @@ router.post(
 // Route to Reset Password
 // http://localhost:5000/api/auth/resetPassword/:resetToken
 router.post(
-  "/resetPassword/:resetToken",
+  "/resetReport/:resetToken",
   [
     body(
       "newPassword",
       "New password must be at least 6 characters long"
-    ).isLength({ min: 6 }),
+    ).isLength({ min: 3 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);

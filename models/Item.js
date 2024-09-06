@@ -9,13 +9,20 @@ const itemSchema = new mongoose.Schema({
   },
   companyName: {
     type: String,
-    required: true,
+    // required: true,
   },
   unit: {
     type: String,
     required: true,
   },
-  stockQty: { type: Number, default: 0 }, // Add this line
+  lessStock: {
+    type: String,
+    required: true,
+  },
+  stockQty:
+  {
+    type: Number, default: 0
+  }, // Add this line
 });
 
 const Item = mongoose.model('Item', itemSchema);

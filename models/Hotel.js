@@ -21,6 +21,9 @@ const hotelSchema = new mongoose.Schema({
     type: String,
     // required: true,
   },
+  vatNo:{
+    type: String,
+  },
   sacNo: {
     type: String,
     // required: true,
@@ -38,6 +41,9 @@ const hotelSchema = new mongoose.Schema({
     // required: true,
   },
   gstPercentage: {
+    type: Number, // You might want to store the path or URL to the QR code image file
+  },
+  vatPercentage: {
     type: Number, // You might want to store the path or URL to the QR code image file
   },
 
